@@ -3,7 +3,7 @@ import google.generativeai as genai
 
 st.set_page_config(
     page_title="Repair Estimator",
-    page_icon="🛠️",
+    page_icon="⚙️",
     layout="wide"
 )
 
@@ -14,8 +14,8 @@ try:
         GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
         genai.configure(api_key=GOOGLE_API_KEY)
 
-        # Use the specific identifier for gemini-1.5-flash
-        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+        # Upgrading to the latest experimental model
+        gemini_model = genai.GenerativeModel('gemini-2.5-flash-preview-04-17')
     else:
         st.error("GOOGLE_API_KEY not found in Streamlit Secrets. Please add it to the Secrets tab in the Streamlit Cloud dashboard.")
         gemini_model = None
@@ -56,7 +56,6 @@ if st.button("Get AI Estimate"):
 
         with st.spinner("Consulting Gemini AI..."):
             try:
-                # Generate content using the initialized model
                 response = gemini_model.generate_content(prompt)
                 st.markdown(response.text)
             except Exception as e:
