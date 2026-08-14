@@ -13,11 +13,11 @@ try:
     if 'GOOGLE_API_KEY' in st.secrets:
         GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
         genai.configure(api_key=GOOGLE_API_KEY)
-        
-        # Use the newer gemini-1.5-flash model
+
+        # Use the specific identifier for gemini-1.5-flash
         gemini_model = genai.GenerativeModel('gemini-1.5-flash')
     else:
-        st.error("GOOGLE_API_KEY not found in Streamlit Secrets.")
+        st.error("GOOGLE_API_KEY not found in Streamlit Secrets. Please add it to the Secrets tab in the Streamlit Cloud dashboard.")
         gemini_model = None
 
 except Exception as e:
@@ -48,14 +48,15 @@ repair_category = st.selectbox(
 
 if st.button("Get AI Estimate"):
     if not gemini_model:
-        st.error("API Key is missing. Add 'GOOGLE_API_KEY' to Streamlit Cloud Secrets.")
+        st.error("API Key is missing or model failed to initialize. Add 'GOOGLE_API_KEY' to Streamlit Cloud Secrets.")
     elif not city or not state_zip or not repair_description:
         st.warning("Please fill in all fields.")
     else:
         prompt = f"Estimate repair costs for: {repair_description} in {city}, {state_zip}. Category: {repair_category}. Provide a range and explanation."
-        
+
         with st.spinner("Consulting Gemini AI..."):
             try:
+                # Generate content using the initialized model
                 response = gemini_model.generate_content(prompt)
                 st.markdown(response.text)
             except Exception as e:
