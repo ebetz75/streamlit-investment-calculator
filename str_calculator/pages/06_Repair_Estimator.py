@@ -10,30 +10,22 @@ st.set_page_config(
 # Configure Gemini API
 try:
     # Use st.secrets for Streamlit Cloud deployment
-    GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
-    genai.configure(api_key=GOOGLE_API_KEY)
-    
-    # Attempt to use gemini-pro, if it fails, list available models
-    try:
-        gemini_model = genai.GenerativeModel('gemini-pro') # Using gemini-pro for general text generation
-    except Exception as model_e:
-        st.error(f"Failed to load 'gemini-pro' model: {model_e}")
-        st.info("Attempting to list available models...")
-        available_models = [m.name for m in genai.list_models() if 'generateContent' in m.supported_generation_methods]
-        if available_models:
-            st.write(f"Available models that support 'generateContent': {', '.join(available_models)}")
-            st.warning("Please update `gemini-pro` in the code to one of the listed models, e.g., `gemini-1.5-flash-latest`.")
-            gemini_model = None # Set to None to prevent further errors
-        else:
-            st.error("No suitable models found. Please check your API key and region settings.")
-            gemini_model = None
+    if 'GOOGLE_API_KEY' in st.secrets:
+        GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
+        genai.configure(api_key=GOOGLE_API_KEY)
+        
+        # Use the newer gemini-1.5-flash model
+        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
+    else:
+        st.error("GOOGLE_API_KEY not found in Streamlit Secrets.")
+        gemini_model = None
 
 except Exception as e:
-    st.error(f"Failed to configure Gemini API. Please ensure GOOGLE_API_KEY is set in Streamlit secrets and you have network access: {e}")
-    gemini_model = None # Set to None to prevent further errors if API fails
+    st.error(f"Failed to configure Gemini API: {e}")
+    gemini_model = None
 
 st.title("AI-Powered Repair Estimator")
-st.write("Get an estimated repair cost based on geographical location and repair details.")
+st.write("Get an estimated repair cost based on location and scope.")
 
 st.subheader("Property Location")
 col_geo1, col_geo2 = st.columns(2)
@@ -44,40 +36,27 @@ with col_geo2:
 
 st.subheader("Repair Details")
 repair_description = st.text_area(
-    "Describe the repair needed (be specific)",
-    value="e.g., Full kitchen remodel with new cabinets and countertops",
-    height=150,
-    help="Provide as much detail as possible about the scope of work."
+    "Describe the repair needed",
+    value="",
+    height=150
 )
 
 repair_category = st.selectbox(
-    "Select Repair Category (for general guidance)",
-    ["Structural", "Plumbing", "Electrical", "HVAC", "Roofing", "Interior Finishes", "Exterior", "Landscaping", "Other"],
-    help="Categorize the primary type of repair."
+    "Select Repair Category",
+    ["Structural", "Plumbing", "Electrical", "HVAC", "Roofing", "Interior Finishes", "Exterior", "Landscaping", "Other"]
 )
 
-submit_estimate = st.button("Get AI Estimate")
-
-if submit_estimate:
-    st.subheader("AI-Driven Repair Cost Estimate")
+if st.button("Get AI Estimate"):
     if not gemini_model:
-        st.error("Gemini API is not configured or a suitable model could not be loaded. Please check your API key and connection, and consult the available models list above.")
+        st.error("API Key is missing. Add 'GOOGLE_API_KEY' to Streamlit Cloud Secrets.")
     elif not city or not state_zip or not repair_description:
-        st.warning("Please fill in all fields (City, State/Zip Code, and Repair Description) to get an estimate.")
+        st.warning("Please fill in all fields.")
     else:
-        prompt = f"""
-        As an AI repair cost estimator, provide a cost range for the following repair.
-        Location: {city}, {state_zip}
-        Repair Category: {repair_category}
-        Repair Description: {repair_description}
-
-        Provide the estimate as a cost range (e.g., $X,XXX - $Y,YYY), and include a short explanation of factors influencing the cost. Also, provide a confidence level (Low, Medium, High). Format the output clearly.
-        """
-
-        with st.spinner("Generating estimate with Gemini AI..."):
+        prompt = f"Estimate repair costs for: {repair_description} in {city}, {state_zip}. Category: {repair_category}. Provide a range and explanation."
+        
+        with st.spinner("Consulting Gemini AI..."):
             try:
                 response = gemini_model.generate_content(prompt)
                 st.markdown(response.text)
             except Exception as e:
-                st.error(f"Error generating estimate from Gemini API: {e}")
-                st.warning("It's possible the model is unavailable or your prompt was too complex. Please try again or simplify your request.")
+                st.error(f"AI Error: {e}")
