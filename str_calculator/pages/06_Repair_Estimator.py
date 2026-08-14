@@ -13,48 +13,36 @@ try:
     if 'GOOGLE_API_KEY' in st.secrets:
         GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
         genai.configure(api_key=GOOGLE_API_KEY)
-
-        # Use the fully qualified model name to resolve 404
-        gemini_model = genai.GenerativeModel('models/gemini-1.5-flash')
+        # Using the standard model name
+        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
     else:
-        st.error("GOOGLE_API_KEY not found in Streamlit Secrets.")
+        st.error("GOOGLE_API_KEY not found in Streamlit Secrets. Please add it to your dashboard.")
         gemini_model = None
-
 except Exception as e:
     st.error(f"Failed to configure Gemini API: {e}")
     gemini_model = None
 
 st.title("AI-Powered Repair Estimator")
-st.write("Get an estimated repair cost based on location and scope.")
+st.write("Get an estimated repair cost range based on your project details.")
 
-st.subheader("Property Location")
+# User Inputs
 col_geo1, col_geo2 = st.columns(2)
 with col_geo1:
     city = st.text_input("City", help="e.g., San Francisco")
 with col_geo2:
     state_zip = st.text_input("State / Zip Code", help="e.g., CA or 90210")
 
-st.subheader("Repair Details")
-repair_description = st.text_area(
-    "Describe the repair needed",
-    value="",
-    height=150
-)
-
-repair_category = st.selectbox(
-    "Select Repair Category",
-    ["Structural", "Plumbing", "Electrical", "HVAC", "Roofing", "Interior Finishes", "Exterior", "Landscaping", "Other"]
-)
+repair_description = st.text_area("Describe the repair needed", height=150)
+repair_category = st.selectbox("Category", ["Structural", "Plumbing", "Electrical", "HVAC", "Roofing", "Interior", "Other"])
 
 if st.button("Get AI Estimate"):
     if not gemini_model:
-        st.error("API Key is missing. Add 'GOOGLE_API_KEY' to Streamlit Cloud Secrets.")
+        st.error("API Key is missing.")
     elif not city or not state_zip or not repair_description:
         st.warning("Please fill in all fields.")
     else:
-        prompt = f"Estimate repair costs for: {repair_description} in {city}, {state_zip}. Category: {repair_category}. Provide a range and explanation."
-
-        with st.spinner("Consulting Gemini AI..."):
+        prompt = f"Provide a cost range for: {repair_description} in {city}, {state_zip}. Category: {repair_category}. Provide a range and 3 cost-driving factors."
+        with st.spinner("Consulting AI..."):
             try:
                 response = gemini_model.generate_content(prompt)
                 st.markdown(response.text)
