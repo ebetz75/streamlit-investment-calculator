@@ -14,8 +14,8 @@ try:
         GOOGLE_API_KEY = st.secrets['GOOGLE_API_KEY']
         genai.configure(api_key=GOOGLE_API_KEY)
 
-        # Upgrading to the latest experimental model
-        gemini_model = genai.GenerativeModel('gemini-2.5-flash-preview-04-17')
+        # Using a stable, high-performance model to avoid 404 errors
+        gemini_model = genai.GenerativeModel('gemini-1.5-flash')
     else:
         st.error("GOOGLE_API_KEY not found in Streamlit Secrets. Please add it to the Secrets tab in the Streamlit Cloud dashboard.")
         gemini_model = None
